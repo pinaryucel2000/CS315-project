@@ -1,0 +1,157 @@
+DEF getDroneInfo(){
+   double inc;
+   double alt;
+   temp tem;
+   double acc;
+   string time;
+
+   inc = CALL readInclination();
+   alt = CALL readAltitude();
+   tem = CALL readTemperature();
+   acc = CALL readAcceleration();
+   time = CALL readTimeStamp();
+
+   // Print inclination
+   <<C "Current inclination: ";
+   <<C inc;
+   <<C "\n";
+
+   // Print altitude
+   <<C "Current altitude: ";
+   <<C alt;
+   <<C "\n";   
+
+   // Print temperature
+   <<C "Current temperature: ";
+   <<C tem;
+   <<C "\n";  
+
+   // Print acceleration
+   <<C "Current acceleration: ";
+   <<C acc;
+   <<C "\n";   
+
+   // Print time stamp
+   <<C "Current time stamp: ";
+   <<C time;
+   <<C "\n";  
+
+   // Print time stamp into timeStamp file
+   <<F timeStamp.txt time;
+   
+}
+
+DEF bool isUnderZero(temp droneTemp){
+   // Check if temperature is greater than or equal to 0
+   if(droneTemp > 0.0 C || droneTemp == 0.0 C){
+      <<C "Temperature is not under zero celcius";
+      return false;
+   }
+   else{
+      <<C "Temperature is under zero celcius";  
+      return true;
+   }
+}
+
+main(){
+   // Greet the user
+   string name;
+   >>F nameFile.txt name;
+   <<C "Welcome ";
+   <<C name;
+   <<C "\n";
+
+   // Connect to the base computer through wifi 
+   bool isConnected;
+   isConnected = false;
+   string wifiName;
+   string wifiPass;
+   
+   while(isConnected == false)
+   {
+      <<C "Enter wifi name: ";
+      >>K wifiName;
+      <<C "Enter wifi password: ";
+      >>K wifiPass;
+      isConnected = CALL connectToBaseComputer(wifiName, wifiPass); 
+   }
+
+   const string time = CALL readTimeStamp();
+   <<F timeFile.txt time;
+   
+
+   // Get drone information
+   CALL getDroneInfo();
+
+   // Output drone temperature into temperature file
+   <<F temperatureInfo.txt CALL readTemperature();
+
+   // Take a picture if the acceleration is 10.5
+   double acc;
+   acc = CALL readAcceleration();
+
+   if(acc == 10.5)
+   {
+      CALL takePicture();
+   }
+
+   // Turn the video camera of the drone on if acceleration is negative
+   if(acc < 0){   
+      CALL videoCameraOn(true);
+   }	
+
+   temp droneTemp;
+   droneTemp = CALL readTemperature();
+
+   bool _isUnderZero;
+   _isUnderZero = CALL isUnderZero(droneTemp);
+
+   if(_isUnderZero)
+   {
+      CALL takePicture();
+   }
+   else
+   {
+      CALL videoCameraOn(true);
+   }
+
+   int i;
+   double accLimit;
+   double incLimit;
+   double inc;
+   int userInput;
+
+   do{
+      <<C "1 Take pictures under limits\n";
+      <<C "2 Exit\n";
+      >>K userInput;
+      
+      if(userInput == 1)
+      {
+         for(i = 0, i < 2, i = i + 1)
+         {
+            if(i == 0)
+            {
+               <<C "Acceleration limit: ";
+               >>K accLimit;
+            }
+            else
+	    {
+               <<C "Inclination limit: ";
+               >>K incLimit;
+            }
+         }
+      }
+      
+      acc = CALL readAcceleration();
+      inc = CALL readInclination();
+      
+      while(acc < accLimit && inc < incLimit)
+      {
+         acc = CALL readAcceleration();
+         inc = CALL readInclination();
+         CALL takePicture();
+      }
+      
+   }while(userInput == 1);
+}
